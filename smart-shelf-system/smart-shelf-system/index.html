@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#111c32">
+  <title>Smart Shelf | Supermarket Management</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+<div class="dashboard-container">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-icon"><i class="fa-solid fa-cubes-stacked"></i></div>
+      <div><h2>SMART<span>SHELF</span></h2><p>SMART SUPERMARKET</p></div>
+    </div>
+    <div class="sidebar-section">
+      <p class="section-label">MAIN MENU</p>
+      <nav>
+        <a href="#overview" class="nav-item active"><i class="fa-solid fa-chart-pie"></i><span>Dashboard</span></a>
+        <a href="#shelves" class="nav-item"><i class="fa-solid fa-boxes-stacked"></i><span>Shelf Monitor</span></a>
+        <a href="#activity" class="nav-item"><i class="fa-solid fa-clock-rotate-left"></i><span>Activity Logs</span></a>
+        <a href="#alerts" class="nav-item"><i class="fa-solid fa-triangle-exclamation"></i><span>Stock Alerts</span><span class="nav-count" id="nav-alert-count">0</span></a>
+      </nav>
+    </div>
+    <div class="sidebar-section">
+      <p class="section-label">ECOSYSTEM MODULES</p>
+      <nav>
+        <a class="nav-item disabled" href="#warehouse"><i class="fa-solid fa-warehouse"></i><span>Smart Warehouse</span><small>SOON</small></a>
+        <a class="nav-item disabled" href="#cart"><i class="fa-solid fa-cart-shopping"></i><span>Smart Cart</span><small>SOON</small></a>
+        <a class="nav-item disabled" href="#cashier"><i class="fa-solid fa-cash-register"></i><span>Smart Cashier</span><small>SOON</small></a>
+        <a class="nav-item disabled" href="#parking"><i class="fa-solid fa-square-parking"></i><span>Smart Parking</span><small>SOON</small></a>
+      </nav>
+    </div>
+    <div class="sidebar-bottom">
+      <div class="system-status"><span class="status-dot" id="sidebar-status-dot"></span><div><strong id="sidebar-system-title">ESP32 disconnected</strong><p id="sidebar-system-subtitle">Waiting for USB connection</p></div></div>
+      <div class="sidebar-footer"><i class="fa-solid fa-circle-info"></i><span>Smart Supermarket v1.0</span></div>
+    </div>
+  </aside>
+
+  <main class="main-content" id="overview">
+    <header class="topbar">
+      <div class="page-heading">
+        <p class="breadcrumb">MAIN MENU / DASHBOARD</p>
+        <h1>Dashboard Overview</h1>
+        <p class="page-description">Monitor your three physical smart shelves in real time.</p>
+      </div>
+      <div class="topbar-right">
+        <div class="connection-pill disconnected" id="connection-pill"><span class="live-dot"></span><span id="connection-label">ESP32 DISCONNECTED</span></div>
+        <button class="connect-btn" id="connect-btn">
+          <i class="fa-brands fa-usb"></i> Connect ESP32
+        </button>
+        <button class="disconnect-btn" id="disconnect-btn" hidden><i class="fa-solid fa-plug-circle-xmark"></i> Disconnect</button>
+        <div class="date-display"><i class="fa-regular fa-calendar"></i><span id="today-date">--</span></div>
+      </div>
+    </header>
+
+    <div class="dashboard-body">
+      <section class="stats-grid">
+        <div class="stat-card"><div class="stat-top"><div class="stat-icon blue"><i class="fa-solid fa-chart-column"></i></div><span class="stat-label">AVERAGE SHELF LEVEL</span></div><h2 id="average-stock">--<span>%</span></h2><p class="stat-description">Average of valid sensor readings</p></div>
+        <div class="stat-card"><div class="stat-top"><div class="stat-icon green"><i class="fa-solid fa-circle-check"></i></div><span class="stat-label">OPTIMAL STOCK</span></div><h2 id="optimal-count">-- <span>shelves</span></h2><p class="stat-description">At or above 70% capacity</p></div>
+        <div class="stat-card"><div class="stat-top"><div class="stat-icon yellow"><i class="fa-solid fa-triangle-exclamation"></i></div><span class="stat-label">LOW STOCK</span></div><h2 id="low-count">-- <span>shelves</span></h2><p class="stat-description">Below 30% capacity</p></div>
+        <div class="stat-card"><div class="stat-top"><div class="stat-icon red"><i class="fa-solid fa-circle-xmark"></i></div><span class="stat-label">EMPTY SHELVES</span></div><h2 id="empty-count">-- <span>shelves</span></h2><p class="stat-description">Valid reading at 0% capacity</p></div>
+      </section>
+
+      <section class="content-section" id="shelves">
+        <div class="section-header"><div><h2>Live Shelf Monitor</h2><p>Live readings from your ESP32 ultrasonic sensors.</p></div><span class="monitor-tag"><i class="fa-solid fa-microchip"></i> 3 SHELF SENSORS</span></div>
+        <div class="shelf-grid">
+          <article class="shelf-card" data-shelf="0">
+            <div class="shelf-card-header"><div class="shelf-title"><span class="shelf-number">01</span><div><h3>Shelf 01</h3><p>Ultrasonic Sensor 01</p></div></div><span class="stock-badge unknown" id="status-0">WAITING</span></div>
+            <div class="product-placeholder"><i class="fa-solid fa-bottle-water"></i></div>
+            <h3 class="product-name">Milk</h3><p class="product-id">SHELF_01 · ₱35.00</p>
+            <div class="stock-quantity"><h2 id="stock-0">--%</h2><span>ESTIMATED SHELF CAPACITY</span></div>
+            <div class="stock-progress"><div class="progress-label"><span>Stock Level</span><strong id="progress-label-0">--</strong></div><div class="progress-track"><div class="progress-fill" id="progress-0"></div></div></div>
+            <div class="sensor-readout"><span>Measured distance</span><strong id="distance-0">-- cm</strong></div>
+            <div class="sensor-readout"><span>Sensor condition</span><strong id="sensor-0">Waiting</strong></div>
+          </article>
+          <article class="shelf-card" data-shelf="1">
+            <div class="shelf-card-header"><div class="shelf-title"><span class="shelf-number">02</span><div><h3>Shelf 02</h3><p>Ultrasonic Sensor 02</p></div></div><span class="stock-badge unknown" id="status-1">WAITING</span></div>
+            <div class="product-placeholder"><i class="fa-solid fa-wheat-awn"></i></div>
+            <h3 class="product-name">Cereal</h3><p class="product-id">SHELF_02 · ₱65.00</p>
+            <div class="stock-quantity"><h2 id="stock-1">--%</h2><span>ESTIMATED SHELF CAPACITY</span></div>
+            <div class="stock-progress"><div class="progress-label"><span>Stock Level</span><strong id="progress-label-1">--</strong></div><div class="progress-track"><div class="progress-fill" id="progress-1"></div></div></div>
+            <div class="sensor-readout"><span>Measured distance</span><strong id="distance-1">-- cm</strong></div>
+            <div class="sensor-readout"><span>Sensor condition</span><strong id="sensor-1">Waiting</strong></div>
+          </article>
+          <article class="shelf-card" data-shelf="2">
+            <div class="shelf-card-header"><div class="shelf-title"><span class="shelf-number">03</span><div><h3>Shelf 03</h3><p>Ultrasonic Sensor 03</p></div></div><span class="stock-badge unknown" id="status-2">WAITING</span></div>
+            <div class="product-placeholder"><i class="fa-solid fa-glass-water"></i></div>
+            <h3 class="product-name">Juice</h3><p class="product-id">SHELF_03 · ₱25.00</p>
+            <div class="stock-quantity"><h2 id="stock-2">--%</h2><span>ESTIMATED SHELF CAPACITY</span></div>
+            <div class="stock-progress"><div class="progress-label"><span>Stock Level</span><strong id="progress-label-2">--</strong></div><div class="progress-track"><div class="progress-fill" id="progress-2"></div></div></div>
+            <div class="sensor-readout"><span>Measured distance</span><strong id="distance-2">-- cm</strong></div>
+            <div class="sensor-readout"><span>Sensor condition</span><strong id="sensor-2">Waiting</strong></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="bottom-grid">
+        <div class="panel activity-panel" id="activity">
+          <div class="panel-header"><div><h2>Recent Shelf Activities</h2><p>Connection events and shelf status changes</p></div><span class="subtle-tag">LIVE FEED</span></div>
+          <div class="activity-list" id="activity-list"><div class="empty-state">Connect your ESP32 to start receiving shelf activity.</div></div>
+        </div>
+        <div class="panel alerts-panel" id="alerts">
+          <div class="panel-header"><div><h2>Stock Alerts</h2><p>Shelves requiring attention</p></div><span class="alert-counter" id="alert-counter">0</span></div>
+          <div id="alert-list"><div class="empty-state">No live sensor data yet.</div></div>
+          <div class="alert-footer"><i class="fa-solid fa-circle-info"></i><span>Thresholds follow the ESP32 logic: low below 30%, medium below 70%.</span></div>
+        </div>
+      </section>
+      <div class="notice"><i class="fa-solid fa-circle-info"></i><div><strong>Hardware readings only</strong><p>This phase reads sensor data from the ESP32. The dashboard does not send pickup/restock commands, calculate item counts, or write to Firebase.</p></div></div>
+      <footer class="main-footer"><p>© 2026 Smart Shelf Management System</p><p>Smart Supermarket Ecosystem · ESP32 USB Serial Integration</p></footer>
+    </div>
+  </main>
+</div>
+<script type="module" src="app.js"></script>
+</body>
+</html>
