@@ -1,0 +1,45 @@
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+const source = await readFile(new URL("./verification.js", import.meta.url), "utf8");
+const { newProduct, applyEvent, inventoryCount } = await import("data:text/javascript;base64," + Buffer.from(source).toString("base64"));
+const step = (s, type, quantity) => applyEvent(s, { type, quantity });
+let s = step(newProduct(5), "shelf", 5);
+s = step(s, "shelf", 2);
+assert.deepEqual([s.unverified, s.partial, s.verified], [3, 0, 0]);
+s = step(s, "cart_add", 2);
+assert.deepEqual([s.unverified, s.partial, s.verified], [1, 2, 0]);
+s = step(s, "checkout", 1);
+assert.deepEqual([s.unverified, s.partial, s.verified], [1, 1, 1]);
+s = step(s, "shelf", 4);
+assert.deepEqual([s.unverified, s.partial, s.verified], [0, 0, 1]);
+s = step(s, "shelf", 5);
+assert.equal(s.verified, 0);
+let early = step(newProduct(5), "shelf", 5);
+early = step(early, "cart_add", 1);
+early = step(early, "checkout", 1);
+early = step(early, "shelf", 4);
+assert.equal(early.verified, 1);
+const baseline = step(newProduct(5), "shelf", 3);
+assert.equal(baseline.removed, 0);
+assert.throws(() => step(baseline, "shelf", 6));
+assert.throws(() => step(baseline, "cart_add", -1));
+assert.throws(() => step(baseline, "checkout", 0.5));
+const simulate = (state, type, quantity) => applyEvent(state, { type, quantity, simulated: true });
+let demo = simulate(newProduct(5), "cart_add", 2);
+assert.deepEqual([demo.remaining, demo.partial, demo.unverified], [3, 2, 0]);
+assert.equal(inventoryCount(demo), 5); // 100%: 3 opaque + 2 translucent.
+const committed = simulate(demo, "checkout", 2);
+assert.equal(inventoryCount(committed), 3); // 60%: 3 opaque + 2 transparent.
+assert.equal(committed.remaining, 3); // Checkout does not remove stock twice.
+demo = simulate(demo, "checkout", 1);
+assert.deepEqual([demo.remaining, demo.partial, demo.verified], [3, 1, 1]);
+assert.throws(() => simulate(demo, "checkout", 2));
+assert.throws(() => simulate(demo, "cart_add", 4));
+let matching = step(newProduct(5), "shelf", 5);
+matching = step(matching, "shelf", 3);
+matching = simulate(matching, "cart_add", 1);
+assert.deepEqual([matching.remaining, matching.unverified, matching.partial], [3, 1, 1]);
+matching = simulate(matching, "cart_add", 2);
+assert.deepEqual([matching.remaining, matching.unverified, matching.partial], [2, 0, 3]);
+assert.equal(matching.remaining + matching.unverified + matching.partial + matching.verified, 5);
+console.log("Passed: stock accounting, simulated pickups, existing pickup matching, checkout without double removal, and quantity limits.");
