@@ -1,4 +1,4 @@
-import { startStore, sendEvent, isCloud, productIds } from "./stock-store.js";
+import { startStore, sendEvent, productIds } from "./stock-store.js";
 import { inventoryCount } from "./verification.js";
 
 const connectButton = document.querySelector("#connect-btn");
@@ -121,7 +121,6 @@ function updateAlerts(statuses) {
 }
 
 function handlePayload(payload) {
-  if (demoMode) return; // Keep simulated shelf counts and bars consistent.
   if (!payload || payload.type !== "smart_shelf" || !Array.isArray(payload.shelves) || payload.shelves.length !== 3) {
     return; // Ignore startup text or unrelated serial output.
   }
@@ -129,8 +128,7 @@ function handlePayload(payload) {
   const statuses = payload.shelves.map((shelf, index) => updateShelfCard(shelf, index));
   updateSummary(statuses);
   updateAlerts(statuses);
-  if (!demoMode) {
-    payload.shelves.forEach((shelf, index) => {
+  payload.shelves.forEach((shelf, index) => {
       if (!shelf.sensor_valid) return;
       const capacity = [5, 4, 5][index];
       const count = Number.isInteger(shelf.stock_count) ? shelf.stock_count : Math.round(Number(shelf.stock_percent) * capacity / 100);
@@ -139,8 +137,7 @@ function handlePayload(payload) {
       lastSubmittedCounts[index] = count;
       shelfWriteQueue = shelfWriteQueue.then(() => sendEvent({ type: "shelf", productId: productIds[index], quantity: count }))
         .catch(error => { lastSubmittedCounts[index] = null; showStoreError(error); });
-    });
-  }
+  });
 }
 
 async function connectESP32() {
@@ -217,26 +214,11 @@ if ("serial" in navigator) {
 setConnectionState("disconnected", "ESP32 DISCONNECTED");
 
 
-// Verification bar and beginner-friendly integration controls.
-let demoMode = false;
+// Live inventory verification display. Test/simulation controls are intentionally removed.
 let lastSubmittedCounts = [null, null, null];
 let shelfWriteQueue = Promise.resolve();
 let currentProducts = {};
 let latestShelves = [];
-const controls = document.createElement("section");
-controls.className = "panel verification-controls";
-controls.innerHTML = `
-  <h2>Purchase verification</h2>
-  <p id="store-status">${isCloud ? "Connecting to Firestore?" : "Local demo ? saved in this browser"}</p>
-  <p>Solid: on shelf ? 45% opacity: unverified ? 20% opacity: cart matched ? transparent: purchased</p>
-  <label>Product <select id="test-product"><option value="SHELF_01">Milk</option><option value="SHELF_02">Cereal</option><option value="SHELF_03">Juice</option></select></label>
-  <label>Quantity <input id="test-quantity" type="number" value="1" min="0" max="100" step="1"></label>
-  <button data-event="shelf">Set shelf count</button>
-  <button data-event="cart_add">Simulate cart scan</button>
-  <button data-event="checkout">Simulate confirmed checkout</button>
-  <p>Cart scans turn picked-up stock translucent. Inventory stays unchanged until checkout, which makes purchased slots fully transparent. Set shelf count controls physical stock; the percentage includes pending items until purchase is confirmed.</p>
-  <p>Test buttons pause USB updates. Reload the page to resume hardware readings. In Firestore mode these buttons write real test events.</p>`;
-document.querySelector("#shelves").before(controls);
 productIds.forEach((id, index) => {
   const box = document.createElement("div");
   box.className = "verification-box";
@@ -248,7 +230,8 @@ productIds.forEach((id, index) => {
   progress.append(box);
 });
 function showStoreError(error) {
-  document.querySelector("#store-status").textContent = "Storage error: " + error.message;
+  console.error("Mart Shelf storage error:", error);
+  addActivity("Storage error", error?.message || "An unknown storage error occurred.", "danger");
 }
 function renderVerification(products) {
   currentProducts = products;
@@ -256,14 +239,10 @@ function renderVerification(products) {
     const statuses = productIds.map((id, index) => {
       const state = products[id];
       const status = updateShelfCard({
-        sensor_valid: demoMode ? Boolean(state?.initialized) : (latestShelves[index]?.sensor_valid ?? Boolean(state?.initialized)),
+        sensor_valid: latestShelves[index]?.sensor_valid ?? Boolean(state?.initialized),
         stock_percent: state ? Math.round(state.remaining / state.capacity * 100) : null,
-        distance_cm: demoMode ? null : latestShelves[index]?.distance_cm
+        distance_cm: latestShelves[index]?.distance_cm
       }, index);
-      if (demoMode) {
-        document.querySelector(`#distance-${index}`).textContent = "-- cm";
-        document.querySelector(`#sensor-${index}`).textContent = "Simulated";
-      }
       return status;
     });
     updateSummary(statuses);
@@ -289,19 +268,4 @@ function renderVerification(products) {
     document.querySelector(`#verification-label-${index}`).textContent = label;
   });
 }
-controls.querySelectorAll("button[data-event]").forEach(button => {
-  button.addEventListener("click", async () => {
-    const quantity = Number(document.querySelector("#test-quantity").value);
-    const productId = document.querySelector("#test-product").value;
-    if (!Number.isInteger(quantity) || quantity < 0) { showStoreError(new Error("Enter a non-negative whole quantity.")); return; }
-    demoMode = true;
-    button.disabled = true;
-    try {
-      await shelfWriteQueue;
-      await sendEvent({ type: button.dataset.event, productId, quantity, simulated: true });
-      document.querySelector("#store-status").textContent = `${isCloud ? "Firestore" : "Local demo"} ? test mode active`;
-    } catch (error) { showStoreError(error); }
-    finally { button.disabled = false; }
-  });
-});
 startStore(renderVerification, showStoreError).catch(showStoreError);
